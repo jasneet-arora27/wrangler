@@ -1,0 +1,30 @@
+1. Grammar File (Directives.g4)
+- How do I define new tokens for byte sizes (e.g., 10KB, 5MB) in ANTLR grammar?
+- How do I define tokens for time durations (e.g., 100ms, 2s)?
+- What is the correct way to write BYTE_UNIT and TIME_UNIT fragments?
+- Where should these rules be placed in the Directives.g4 file?
+- What is the Maven command to regenerate parser and lexer files after updating the .g4 grammar?
+
+2. Token Classes in Java
+- How can I implement a Java class to parse strings like "10KB" into bytes?
+- What is the best way to handle decimal values such as "2.5MB" safely using long?
+- How do I parse strings like "500ms" and convert them to milliseconds or nanoseconds?
+- Should I use regular expressions to separate the number and unit?
+- How do I register BYTE_SIZE and TIME_DURATION as valid token types in Token.java?
+
+3. Core Parser Updates
+- In which visitor methods should I handle these new tokens?
+- What is the purpose of ctx.getText() and how is it typically used?
+- How do I include the new token instances into the TokenGroup?
+
+4. New Directive (aggregate-stats)
+- How can I implement a directive that reads values from byte size and time duration columns?
+- What is the correct way to store total values across multiple rows?
+- How can I return a single row with either total or average values?
+- How do I convert values to specified units like MB or seconds in the final output?
+- How do I allow optional arguments to define output units or aggregation type (total, average)?
+
+5. Unit Testing
+- Can I get sample JUnit test cases for verifying the parsing of "10KB", "2MB", and "1.5s"?
+- How do I write tests to handle invalid formats such as "10XY" or "abcms"?
+- How can I test the aggregate-stats directive using mock data rows?
