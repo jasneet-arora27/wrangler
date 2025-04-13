@@ -31,6 +31,30 @@ More [here](wrangler-docs/upcoming-features.md) on upcoming features.
   * A new capability that allows CDAP Administrators to **restrict the directives** that are accessible to their users.
 More information on configuring can be found [here](wrangler-docs/exclusion-and-aliasing.md)
 
+### Enhancements for Byte Size and Time Duration Support
+
+- **Grammar Enhancements**
+  `Directives.g4` (in `wrangler-core/src/main/antlr4/...`) now includes new lexer tokens (`BYTE_SIZE`, `TIME_DURATION`) and helper fragments (`BYTE_UNIT`, `TIME_UNIT`). New parser rules (`byteSizeArg`, `timeDurationArg`) let these tokens be used as directive arguments.
+
+- **API Updates**
+  Two new classes (`ByteSize.java`, `TimeDuration.java`) have been added to the *wrangler-api* module (in `io/cdap/wrangler/api/parser`).
+  - **ByteSize.java** parses strings like `"10KB"` into a long representing bytes (`getBytes()`).
+  - **TimeDuration.java** parses strings like `"150ms"` into a long representing nanoseconds (`getNanos()`).
+  Also, new token types `BYTE_SIZE` and `TIME_DURATION` were added to `TokenType.java`.
+
+- **Parser Updates**
+  The recipe visitor (in `RecipeVisitor.java`, wrangler-core) has methods (`visitByteSizeArg`, `visitTimeDurationArg`) that build `ByteSize`/`TimeDuration` objects when these tokens appear.
+
+- **New Aggregate Directive**
+  A new directive `aggregate-stats` (in `wrangler-core`, `io/cdap/wrangler/directives/AggregateStats.java`) accepts four arguments:
+  1. Column for byte sizes
+  2. Column for time durations
+  3. Target column for total size
+  4. Target column for total time
+
+  It sums up bytes / nanoseconds across rows and outputs a single row with the aggregated totals.
+
+
 ## Demo Videos and Recipes
 
 Videos and Screencasts are best way to learn, so we have compiled simple, short screencasts that shows some of the features of Data Prep. Additional videos can be found [here](https://www.youtube.com/playlist?list=PLhmsf-NvXKJn-neqefOrcl4n7zU4TWmIr)
@@ -168,12 +192,51 @@ These directives are currently available:
 
 Initial performance tests show that with a set of directives of high complexity for
 transforming data, *DataPrep* is able to process at about ~106K records per second. The
-rates below are specified as *records/second*. 
+rates below are specified as *records/second*.
 
 | Directive Complexity | Column Count |    Records |           Size | Mean Rate |
 | -------------------- | :----------: | ---------: | -------------: | --------: |
 | High (167 Directives) |      426      | 127,946,398 |  82,677,845,324 | 106,367.27 |
 | High (167 Directives) |      426      | 511,785,592 | 330,711,381,296 | 105,768.93 |
+
+## Usage Example: aggregate-stats Directive
+
+Below is a simple example showing how to use the new `aggregate-stats` directive with byte size and time duration columns:
+
+```clojure
+(set-column :transfer_size "10MB")
+(set-column :response_time "250ms")
+(aggregate-stats :transfer_size :response_time :total_size :total_time)
+```
+
+In this example:
+- **:transfer_size** is stored as a `ByteSize` token (10MB → bytes).
+- **:response_time** is stored as a `TimeDuration` token (250ms → nanoseconds).
+- The `aggregate-stats` directive reads these columns from all rows, sums their values (in bytes and nanoseconds), and produces a single row containing `:total_size` and `:total_time`.
+
+## How to Build and Test
+
+To build the Wrangler project (including the new Byte Size and Time Duration enhancements), run:
+
+* mvn clean install
+* mvn test
+
+to verify that all unit tests pass.
+
+### Testing the New Byte/Time Parsing and aggregate-stats Directive
+
+- **ByteSize & TimeDuration Tests**: We have new test classes verifying correct parsing for strings like `"10KB"` or `"2.5s"`.
+- **Parser Tests**: Ensures that recipes referencing `BYTE_SIZE` / `TIME_DURATION` tokens (like `10KB`, `150ms`) parse successfully.
+- **AggregateStats Tests**: Confirms that `aggregate-stats` sums the byte sizes and time durations correctly. For example, `"10KB" + "5KB" → 15360 bytes`.
+
+## Deliverables for the Byte/Time Enhancement
+
+1. **Modified Grammar**: `Directives.g4` updated to include `BYTE_SIZE`, `TIME_DURATION`, etc.
+2. **New Java Classes**: `ByteSize.java` and `TimeDuration.java` in wrangler-api (`io/cdap/wrangler/api/parser`).
+3. **Parser Updates**: In wrangler-core, the visitor methods (like `visitByteSizeArg`) that instantiate ByteSize/TimeDuration.
+4. **aggregate-stats Directive**: In `wrangler-core/src/main/java/io/cdap/wrangler/directives/AggregateStats.java`.
+5. **Test Classes**: Unit tests for ByteSize/TimeDuration, parser tests for the new tokens, and tests verifying the aggregate-stats directive’s functionality.
+6. **Build Logs**: Evidence of a successful build/test run (e.g. `mvn clean install` output).
 
 
 ## Contact
